@@ -35,7 +35,7 @@ export const NAVIGATION_ITEMS = [
     name: 'Keuangan & Anggaran',
     href: '/finance',
     icon: Wallet,
-    badge: 'Anak Kos',
+    badge: 'Dompet',
     accentColor: '#22C55E', // Green
   },
   {
@@ -81,7 +81,7 @@ export function Sidebar({ className, isMobileOpen, onMobileClose }: SidebarProps
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-extrabold tracking-tight text-white">NATA</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#4EA5D9]/20 text-[#4EA5D9] rounded-md border border-[#4EA5D9]/30">v1.0</span>
+
             </div>
             <p className="text-[11px] text-slate-300/70 font-medium">Aktivitas, Target & Anggaran</p>
           </div>
@@ -119,8 +119,8 @@ export function Sidebar({ className, isMobileOpen, onMobileClose }: SidebarProps
               href={item.href}
               onClick={onMobileClose}
               className={`flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm transition-all duration-200 group ${isActive
-                  ? 'bg-white/15 text-white shadow-md border border-white/20'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                ? 'bg-white/15 text-white shadow-md border border-white/20'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white'
                 }`}
             >
               <div className="flex items-center gap-3">
