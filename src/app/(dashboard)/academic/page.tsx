@@ -19,6 +19,7 @@ import {
   FileText,
   ChevronRight,
   Pencil,
+  X,
 } from 'lucide-react';
 import { FaUserGraduate, FaChromecast } from 'react-icons/fa';
 import { SiGoogleclassroom } from 'react-icons/si';
@@ -53,6 +54,11 @@ export default function AcademicPage() {
 
   const [activeTab, setActiveTab] = useState<'jadwal' | 'tugas' | 'drive'>('jadwal');
   const [courseFilter, setCourseFilter] = useState<string>('ALL');
+
+  // Search & Filter Academic
+  const [searchAcademic, setSearchAcademic] = useState('');
+  const [dayFilter, setDayFilter] = useState<number | 'ALL'>('ALL');
+  const [searchTask, setSearchTask] = useState('');
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchDrive, setSearchDrive] = useState('');
@@ -330,6 +336,30 @@ export default function AcademicPage() {
     return matchSearch && matchCategory;
   });
 
+  const filteredSchedules = schedules.filter((s) => {
+    const matchDay = dayFilter === 'ALL' || s.dayOfWeek === dayFilter;
+    const q = searchAcademic.toLowerCase().trim();
+    if (!q) return matchDay;
+    const matchQuery =
+      s.courseName.toLowerCase().includes(q) ||
+      s.courseCode.toLowerCase().includes(q) ||
+      (s.room && s.room.toLowerCase().includes(q)) ||
+      (s.dayName && s.dayName.toLowerCase().includes(q));
+    return matchDay && matchQuery;
+  });
+
+  const filteredCourses = courses.filter((c) => {
+    const q = searchAcademic.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.code.toLowerCase().includes(q) ||
+      (c.lecturer && c.lecturer.toLowerCase().includes(q)) ||
+      (c.room && c.room.toLowerCase().includes(q)) ||
+      (c.capaianPembelajaran && c.capaianPembelajaran.toLowerCase().includes(q))
+    );
+  });
+
   const totalSKS = courses.reduce((sum, c) => sum + c.sks, 0);
 
   const getTasksForCourse = (courseName: string, courseCode?: string) => {
@@ -347,7 +377,7 @@ export default function AcademicPage() {
     <div className="space-y-6">
       <Header title="Akademik, Jadwal & RPS Kuliah" onMenuToggle={onMenuToggle} />
 
-      <div className="px-6 space-y-6">
+      <div className="px-3.5 sm:px-6 space-y-6 max-w-7xl mx-auto">
         {/* Academic Overview Bar */}
         <div
           style={{
@@ -438,6 +468,78 @@ export default function AcademicPage() {
         {/* TAB 1: UNIFIED JADWAL KULIAH & RENCANA PEMBELAJARAN SEMESTER (RPS) */}
         {activeTab === 'jadwal' && (
           <div className="space-y-8">
+            {/* Search and Day Filter Toolbar */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchAcademic}
+                    onChange={(e) => setSearchAcademic(e.target.value)}
+                    placeholder="Cari matkul, kode (IF301), dosen, ruang kelas, atau materi RPS..."
+                    className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EA5D9] transition-all"
+                  />
+                  {searchAcademic && (
+                    <button
+                      onClick={() => setSearchAcademic('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+                      title="Hapus pencarian"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Day Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">Hari:</span>
+                  {[
+                    { day: 'ALL', label: 'Semua Hari' },
+                    { day: 1, label: 'Senin' },
+                    { day: 2, label: 'Selasa' },
+                    { day: 3, label: 'Rabu' },
+                    { day: 4, label: 'Kamis' },
+                    { day: 5, label: 'Jumat' },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => setDayFilter(item.day as number | 'ALL')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        dayFilter === item.day
+                          ? 'bg-[#091540] dark:bg-[#4EA5D9] text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Active Search & Filter Indicator */}
+              {(searchAcademic || dayFilter !== 'ALL') && (
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Menampilkan hasil {searchAcademic ? <>untuk &ldquo;<strong>{searchAcademic}</strong>&rdquo;</> : null}{' '}
+                    {dayFilter !== 'ALL' ? <>(Hari {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'][(dayFilter as number) - 1]})</> : null}:{' '}
+                    <span className="font-bold text-[#4EA5D9]">{filteredSchedules.length} jadwal</span> &bull;{' '}
+                    <span className="font-bold text-[#8B5CF6]">{filteredCourses.length} matkul/RPS</span>
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSearchAcademic('');
+                      setDayFilter('ALL');
+                    }}
+                    className="text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer ml-2 shrink-0"
+                  >
+                    Reset Pencarian
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* SECTION 1: WEEKLY TIMETABLE GRID */}
             <Card glass={false} className="border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
               <CardHeader>
@@ -451,27 +553,33 @@ export default function AcademicPage() {
                 </Button>
               </CardHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+              <div className={`grid gap-4 mt-4 ${
+                dayFilter !== 'ALL' ? 'grid-cols-1 max-w-xl mx-auto' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
+              }`}>
                 {[
                   { day: 1, name: 'Senin' },
                   { day: 2, name: 'Selasa' },
                   { day: 3, name: 'Rabu' },
                   { day: 4, name: 'Kamis' },
                   { day: 5, name: 'Jumat' },
-                ].map(({ day, name }) => {
-                  const dayScheds = schedules.filter((s) => s.dayOfWeek === day);
+                ]
+                  .filter((d) => dayFilter === 'ALL' || d.day === dayFilter)
+                  .map(({ day, name }) => {
+                    const dayScheds = filteredSchedules.filter((s) => s.dayOfWeek === day);
 
-                  return (
-                    <div key={day} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                      <div className="text-xs font-extrabold text-[#091540] dark:text-white pb-2 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                        <span>{name}</span>
-                        <span className="text-[10px] font-semibold text-slate-400">{dayScheds.length} Kelas</span>
-                      </div>
+                    return (
+                      <div key={day} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                        <div className="text-xs font-extrabold text-[#091540] dark:text-white pb-2 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                          <span>{name}</span>
+                          <span className="text-[10px] font-semibold text-slate-400">{dayScheds.length} Kelas</span>
+                        </div>
 
-                      <div className="space-y-2.5">
-                        {dayScheds.length === 0 ? (
-                          <p className="text-[11px] text-slate-400 text-center py-6">Tidak ada perkuliahan</p>
-                        ) : (
+                        <div className="space-y-2.5">
+                          {dayScheds.length === 0 ? (
+                            <p className="text-[11px] text-slate-400 text-center py-6">
+                              {searchAcademic ? 'Tidak ada jadwal cocok' : 'Tidak ada perkuliahan'}
+                            </p>
+                          ) : (
                           dayScheds.map((s) => {
                             const courseInfo = courses.find((c) => c.code === s.courseCode || c.name === s.courseName);
                             const linkedTasks = getTasksForCourse(s.courseName, s.courseCode);
@@ -566,9 +674,18 @@ export default function AcademicPage() {
                     <span>Tambah Mata Kuliah Pertama</span>
                   </Button>
                 </Card>
+              ) : filteredCourses.length === 0 ? (
+                <Card glass={false} className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                  <Search className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-[#091540] dark:text-white">Tidak Ada Mata Kuliah yang Cocok</p>
+                  <p className="text-xs text-slate-400 mb-4">Tidak ditemukan mata kuliah atau RPS dengan kata kunci &ldquo;{searchAcademic}&rdquo;.</p>
+                  <Button variant="outline" size="sm" onClick={() => setSearchAcademic('')}>
+                    Bersihkan Pencarian
+                  </Button>
+                </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {courses.map((course) => {
+                  {filteredCourses.map((course) => {
                     const courseTasks = getTasksForCourse(course.name, course.code);
                     const activeTasks = courseTasks.filter((t) => t.status !== 'COMPLETED');
 
@@ -705,35 +822,74 @@ export default function AcademicPage() {
               </Button>
             </div>
 
-            {/* Filter mata kuliah di tab tugas */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-500 shrink-0">Filter Matkul:</span>
-              <button
-                onClick={() => setCourseFilter('ALL')}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${courseFilter === 'ALL'
-                  ? 'bg-[#091540] text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-              >
-                Semua
-              </button>
-              {courses.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setCourseFilter(c.name)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${courseFilter === c.name
-                    ? 'text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  style={courseFilter === c.name ? { backgroundColor: c.color || '#4EA5D9' } : {}}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: c.color || '#4EA5D9' }}
+            {/* Search and Course Filter Bar */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTask}
+                    onChange={(e) => setSearchTask(e.target.value)}
+                    placeholder="Cari judul tugas, mata kuliah, atau instruksi..."
+                    className="w-full pl-10 pr-9 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EA5D9] transition-all"
                   />
-                  {c.name}
-                </button>
-              ))}
+                  {searchTask && (
+                    <button
+                      onClick={() => setSearchTask('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+                      title="Hapus pencarian tugas"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter mata kuliah di tab tugas */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 shrink-0 mr-1">Matkul:</span>
+                  <button
+                    onClick={() => setCourseFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${courseFilter === 'ALL'
+                      ? 'bg-[#091540] dark:bg-[#4EA5D9] text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                  >
+                    Semua
+                  </button>
+                  {courses.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setCourseFilter(c.name)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${courseFilter === c.name
+                        ? 'text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      style={courseFilter === c.name ? { backgroundColor: c.color || '#4EA5D9' } : {}}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: c.color || '#4EA5D9' }}
+                      />
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {searchTask && (
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Menampilkan tugas dengan kata kunci &ldquo;<strong>{searchTask}</strong>&rdquo;
+                  </span>
+                  <button
+                    onClick={() => setSearchTask('')}
+                    className="text-[11px] font-bold text-rose-500 hover:text-rose-600 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -748,7 +904,13 @@ export default function AcademicPage() {
                 const columnTasks = tasks.filter((t) => {
                   const matchStatus = t.status === statusKey;
                   const matchCourse = courseFilter === 'ALL' || t.courseName === courseFilter;
-                  return matchStatus && matchCourse;
+                  const q = searchTask.toLowerCase().trim();
+                  const matchSearch =
+                    !q ||
+                    t.title.toLowerCase().includes(q) ||
+                    (t.courseName && t.courseName.toLowerCase().includes(q)) ||
+                    (t.description && t.description.toLowerCase().includes(q));
+                  return matchStatus && matchCourse && matchSearch;
                 });
 
                 return (
