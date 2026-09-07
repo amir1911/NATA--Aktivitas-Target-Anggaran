@@ -1,0 +1,215 @@
+// Prisma Schema for NATA (Nata Aktivitas, Target, dan Anggaran)
+// Configured for Supabase PostgreSQL (with direct & pooled URLs)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  passwordHash     String
+  createdAt        DateTime       @default(now())
+
+  courses          Course[]
+  tasks            Task[]
+  driveLinks       DriveLink[]
+  transactions     Transaction[]
+  budgets          Budget[]
+  savingsGoals     SavingsGoal[]
+  billReminders    BillReminder[]
+  notes            Note[]
+}
+
+model Course {
+  id          String          @id @default(uuid())
+  userId      String
+  code        String
+  name        String
+  lecturer    String?
+  room        String?
+  color       String          @default("#3b82f6") // hex code or tailwind color
+  semester    Int             @default(5)
+  sks         Int             @default(3)
+  targetGrade String          @default("A")
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules   ClassSchedule[]
+  tasks       Task[]
+  driveLinks  DriveLink[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ClassSchedule {
+  id        String   @id @default(uuid())
+  courseId  String
+  dayOfWeek Int      // 1 = Senin, 2 = Selasa, 3 = Rabu, 4 = Kamis, 5 = Jumat, 6 = Sabtu, 7 = Minggu
+  startTime String   // e.g. "08:00"
+  endTime   String   // e.g. "10:30"
+  room      String?
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  userId      String
+  courseId    String?
+  title       String
+  description String?
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime
+  driveUrl    String?
+  tags        String?    // Komma separated tags
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course?    @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum DriveCategory {
+  TUGAS
+  MATERI
+  CATATAN
+  PROYEK
+  LAINNYA
+}
+
+model DriveLink {
+  id          String        @id @default(uuid())
+  userId      String
+  courseId    String?
+  title       String
+  url         String
+  category    DriveCategory @default(TUGAS)
+  description String?
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum TransactionType {
+  PEMASUKAN
+  PENGELUARAN
+}
+
+enum TransactionCategory {
+  MAKAN
+  KOS
+  LAUNDRY
+  KUOTA
+  TRANSPORT
+  HIBURAN
+  BEASISWA
+  UANG_SAKU
+  SIDE_HUSTLE
+  KESEHATAN
+  ALAT_TULIS
+  LAINNYA
+}
+
+model Transaction {
+  id          String              @id @default(uuid())
+  userId      String
+  type        TransactionType
+  category    TransactionCategory
+  amount      Float
+  title       String
+  date        DateTime            @default(now())
+  notes       String?
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model Budget {
+  id          String              @id @default(uuid())
+  userId      String
+  category    TransactionCategory
+  amountLimit Float
+  monthYear   String              // e.g. "2026-09"
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([userId, category, monthYear])
+}
+
+model SavingsGoal {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime
+  color         String   @default("#10b981")
+  icon          String   @default("target")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model BillReminder {
+  id              String   @id @default(uuid())
+  userId          String
+  title           String
+  amount          Float
+  dueDate         DateTime
+  isPaid          Boolean  @default(false)
+  recurringPeriod String?  @default("BULANAN") // BULANAN, MINGGUAN, SEMESTERAN
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  content   String
+  category  String   @default("Umum")
+  isPinned  Boolean  @default(false)
+  tags      String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
